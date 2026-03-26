@@ -55,11 +55,13 @@ ID 99001은 합성 픽스처 데이터로 fallback.
 
 ## 목적(Purpose) 모드
 
-| 코드 | 한국어 | 설명 |
-|------|--------|------|
-| `rounds` | 인계용 | 최근 72시간 변화 중심, 즉각 주의사항 강조 |
-| `preop` | 수술 전 | 심장·신장·응고 위험도, 항응고제 bridge 계획 |
-| `referral` | 타과 의뢰 | 전문의용 전체 임상 요약, 의뢰 이유 선두 |
+
+| 코드         | 한국어   | 설명                           |
+| ---------- | ----- | ---------------------------- |
+| `rounds`   | 인계용   | 최근 72시간 변화 중심, 즉각 주의사항 강조    |
+| `preop`    | 수술 전  | 심장·신장·응고 위험도, 항응고제 bridge 계획 |
+| `referral` | 타과 의뢰 | 전문의용 전체 임상 요약, 의뢰 이유 선두      |
+
 
 ---
 
@@ -87,58 +89,70 @@ OTEMR/
 
 ### `agent/`
 
-| 파일 | 역할 |
-|------|------|
-| `summarizer.py` | GPT-4o-mini API 호출 래퍼. 토큰 예산 관리(`tiktoken`), json_object 모드, Pydantic 검증, 재시도 로직 포함. |
+
+| 파일                   | 역할                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `summarizer.py`      | GPT-4o-mini API 호출 래퍼. 토큰 예산 관리(`tiktoken`), json_object 모드, Pydantic 검증, 재시도 로직 포함.                                                        |
 | `context_builder.py` | `PatientRecord` + 분석 결과 → 프롬프트 user message 조립. 섹션: DEMOGRAPHICS / DIAGNOSES / TAGS / MEDICATIONS / LAB TRENDS / FLAGS / CHECKLIST / NOTES. |
-| `output_schema.py` | GPT 출력 Pydantic 스키마. `AgentOutput` = `PreVisitContext` + `ChangeFlagOutput[]` + `ChecklistItemOutput[]`. |
-| `prompts.py` | 목적별 system prompt 빌더. 임상 역할 설정, JSON 출력 포맷 지정, 데이터 기반 진술 강제. |
+| `output_schema.py`   | GPT 출력 Pydantic 스키마. `AgentOutput` = `PreVisitContext` + `ChangeFlagOutput[]` + `ChecklistItemOutput[]`.                                    |
+| `prompts.py`         | 목적별 system prompt 빌더. 임상 역할 설정, JSON 출력 포맷 지정, 데이터 기반 진술 강제.                                                                                |
+
 
 ### `analysis/`
 
-| 파일 | 역할 |
-|------|------|
-| `trend.py` | `LabEvent[]` → `Dict[itemid, TrendResult]`. 이상치 제거(IQR 3배), 선형회귀 slope, IMPROVING/WORSENING/STABLE 방향 분류, 스파크라인 데이터(최대 10포인트) 생성. |
-| `flags.py` | `TrendResult` 기반 이상 변화 감지. 중증도(HIGH/MEDIUM/LOW) 분류. 예: Cr +50% → HIGH (AKI 기준), Hgb < 7.0 → HIGH (중증 빈혈). |
-| `checklist.py` | HIGH 플래그 → 액션 아이템 변환. 약물 안전성 규칙(Metformin+AKI, NSAID+CKD 등), 데이터 갭 감지, 목적별 규칙 적용. |
-| `diagnosis_context.py` | ICD 코드 목록 → 임상 컨텍스트 태그 추출 (DM, CKD, HF 등). 프롬프트 삽입용. |
+
+| 파일                     | 역할                                                                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `trend.py`             | `LabEvent[]` → `Dict[itemid, TrendResult]`. 이상치 제거(IQR 3배), 선형회귀 slope, IMPROVING/WORSENING/STABLE 방향 분류, 스파크라인 데이터(최대 10포인트) 생성. |
+| `flags.py`             | `TrendResult` 기반 이상 변화 감지. 중증도(HIGH/MEDIUM/LOW) 분류. 예: Cr +50% → HIGH (AKI 기준), Hgb < 7.0 → HIGH (중증 빈혈).                         |
+| `checklist.py`         | HIGH 플래그 → 액션 아이템 변환. 약물 안전성 규칙(Metformin+AKI, NSAID+CKD 등), 데이터 갭 감지, 목적별 규칙 적용.                                                 |
+| `diagnosis_context.py` | ICD 코드 목록 → 임상 컨텍스트 태그 추출 (DM, CKD, HF 등). 프롬프트 삽입용.                                                                              |
+
 
 ### `config/`
 
-| 파일 | 역할 |
-|------|------|
+
+| 파일                | 역할                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `lab_profiles.py` | Lab item 메타데이터 정의. BASE 항목(CBC/BMP/LFT/응고), 목적별 추가 항목, ICD prefix별 추가 항목(E11→HbA1c, N18→Cr·BUN 등), 정상 범위, 악화 방향(`up`/`down`/`both`). |
-| `settings.py` | 환경변수 로드. BQ 프로젝트, OpenAI 키, 파이프라인 상수(`LAB_HISTORY_DAYS=180`, `PROMPT_TOKEN_BUDGET=6000` 등). |
+| `settings.py`     | 환경변수 로드. BQ 프로젝트, OpenAI 키, 파이프라인 상수(`LAB_HISTORY_DAYS=180`, `PROMPT_TOKEN_BUDGET=6000` 등).                                          |
+
 
 ### `data/`
 
-| 파일 | 역할 |
-|------|------|
-| `loader.py` | 핵심 데이터 모델(`PatientRecord`, `Admission`, `LabEvent`, `Prescription` 등) 정의. BigQuery 로드 함수(`load_patient`) + parquet 로드 함수(`load_patient_from_parquet`, `load_demo_patient`, `load_processed_patient`). |
-| `queries.py` | MIMIC-IV BigQuery SQL 쿼리 템플릿. demographics+admissions, diagnoses, labs, prescriptions, discharge notes 조회. |
-| `bq_client.py` | BigQuery 클라이언트 싱글턴. 자격증명 없을 시 gracefully None 반환. |
-| `cache.py` | pickle 기반 디스크 캐시. `data/cache/`에 저장. 키 형식: `{subject_id}_{purpose}_{lab_days}`. |
-| `demo_patients.py` | 데모 케이스 목록(`DEMO_CASES`). 3개 케이스의 subject_id, 기본 목적, 설명 정의. |
+
+| 파일                 | 역할                                                                                                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loader.py`        | 핵심 데이터 모델(`PatientRecord`, `Admission`, `LabEvent`, `Prescription` 등) 정의. BigQuery 로드 함수(`load_patient`) + parquet 로드 함수(`load_patient_from_parquet`, `load_demo_patient`, `load_processed_patient`). |
+| `queries.py`       | MIMIC-IV BigQuery SQL 쿼리 템플릿. demographics+admissions, diagnoses, labs, prescriptions, discharge notes 조회.                                                                                            |
+| `bq_client.py`     | BigQuery 클라이언트 싱글턴. 자격증명 없을 시 gracefully None 반환.                                                                                                                                                     |
+| `cache.py`         | pickle 기반 디스크 캐시. `data/cache/`에 저장. 키 형식: `{subject_id}_{purpose}_{lab_days}`.                                                                                                                       |
+| `demo_patients.py` | 데모 케이스 목록(`DEMO_CASES`). 3개 케이스의 subject_id, 기본 목적, 설명 정의.                                                                                                                                            |
+
 
 #### `data/demo/` — 데모용 parquet (3명)
 
-| 파일 | 내용 |
-|------|------|
-| `demo_patients.parquet` | 인구통계 (3행) |
-| `demo_admissions.parquet` | 입원 이력 (114행) |
-| `demo_diagnoses.parquet` | ICD 진단 (2,596행) |
-| `demo_labs.parquet` | Lab 결과 (9,424행) |
-| `demo_prescriptions.parquet` | 처방 (6,662행) |
+
+| 파일                           | 내용              |
+| ---------------------------- | --------------- |
+| `demo_patients.parquet`      | 인구통계 (3행)       |
+| `demo_admissions.parquet`    | 입원 이력 (114행)    |
+| `demo_diagnoses.parquet`     | ICD 진단 (2,596행) |
+| `demo_labs.parquet`          | Lab 결과 (9,424행) |
+| `demo_prescriptions.parquet` | 처방 (6,662행)     |
+
 
 #### `data/processed/` — 전처리된 전체 MIMIC-IV parquet
 
-| 파일 | 내용 |
-|------|------|
-| `patients_clean.parquet` | ~3MB |
-| `admissions_clean.parquet` | ~16MB |
-| `diagnoses.parquet` | ~75MB |
-| `labs_clean.parquet` | ~144MB |
+
+| 파일                            | 내용     |
+| ----------------------------- | ------ |
+| `patients_clean.parquet`      | ~3MB   |
+| `admissions_clean.parquet`    | ~16MB  |
+| `diagnoses.parquet`           | ~75MB  |
+| `labs_clean.parquet`          | ~144MB |
 | `prescriptions_clean.parquet` | ~431MB |
+
 
 > **parquet 읽기 주의**: `dod` 컬럼이 BigQuery `DATE` 타입(`date32[day]`)으로 저장돼 있어 `pd.read_parquet()` 직접 사용 시 오류 발생. 반드시 `dtype_backend='pyarrow'` 옵션 사용.
 >
@@ -146,44 +160,54 @@ OTEMR/
 
 ### `ui/`
 
-| 파일 | 역할 |
-|------|------|
+
+| 파일       | 역할                                                                      |
+| -------- | ----------------------------------------------------------------------- |
 | `app.py` | Streamlit 메인 앱. 사이드바(환자 선택), 목적 버튼, 파이프라인 실행(`run_pipeline`), 3패널 레이아웃. |
+
 
 #### `ui/components/`
 
-| 파일 | 역할 |
-|------|------|
-| `flags_panel.py` | Change Flags 렌더링 (severity별 색상) |
-| `summary_panel.py` | LLM 생성 임상 요약 렌더링 |
-| `trend_chart.py` | Lab 트렌드 스파크라인 차트 |
-| `checklist_panel.py` | Must-check 체크리스트 렌더링 |
+
+| 파일                   | 역할                              |
+| -------------------- | ------------------------------- |
+| `flags_panel.py`     | Change Flags 렌더링 (severity별 색상) |
+| `summary_panel.py`   | LLM 생성 임상 요약 렌더링                |
+| `trend_chart.py`     | Lab 트렌드 스파크라인 차트                |
+| `checklist_panel.py` | Must-check 체크리스트 렌더링            |
+
 
 ### `tests/`
 
-| 파일 | 역할 |
-|------|------|
-| `test_trend.py` | `compute_trends()` 단위 테스트 |
-| `test_flags.py` | `detect_flags()` 단위 테스트 |
-| `test_prompts.py` | 프롬프트 빌드 테스트 |
+
+| 파일                           | 역할                                                          |
+| ---------------------------- | ----------------------------------------------------------- |
+| `test_trend.py`              | `compute_trends()` 단위 테스트                                   |
+| `test_flags.py`              | `detect_flags()` 단위 테스트                                     |
+| `test_prompts.py`            | 프롬프트 빌드 테스트                                                 |
 | `fixtures/patient_dm_ckd.py` | 오프라인 테스트용 합성 환자 (ID 99001). T2DM+CKD3+HTN, 180일 Lab 시계열 포함. |
+
 
 ### `scripts/`
 
-| 파일 | 역할 |
-|------|------|
+
+| 파일                       | 역할                             |
+| ------------------------ | ------------------------------ |
 | `cache_demo_patients.py` | BigQuery에서 데모 환자 데이터를 읽어 캐시 생성 |
-| `validate_bq_access.py` | BigQuery 연결 및 접근 권한 검증 |
+| `validate_bq_access.py`  | BigQuery 연결 및 접근 권한 검증         |
+
 
 ---
 
 ## 데모 환자 3명
 
-| Case | subject_id | 성별/나이 | 주요 진단 | 기본 목적 |
-|------|-----------|---------|---------|---------|
-| A | 18767874 | F, 71세 | T2DM + CKD stage5/ESRD + 투석 + HTN + HF | rounds |
-| B | 13303809 | F, 36세 | CAD + old MI + CABG 시행력 + 항응고제 + T1DM | preop |
-| C | 12468016 | M, 50세 | CKD + HF + COPD + AKI + Crohn's disease | referral |
+
+| Case | subject_id | 성별/나이  | 주요 진단                                   | 기본 목적    |
+| ---- | ---------- | ------ | --------------------------------------- | -------- |
+| A    | 18767874   | F, 71세 | T2DM + CKD stage5/ESRD + 투석 + HTN + HF  | rounds   |
+| B    | 13303809   | F, 36세 | CAD + old MI + CABG 시행력 + 항응고제 + T1DM   | preop    |
+| C    | 12468016   | M, 50세 | CKD + HF + COPD + AKI + Crohn's disease | referral |
+
 
 ---
 
@@ -224,8 +248,9 @@ GOOGLE_APPLICATION_CREDENTIALS=./secrets/service_account.json
 .venv\Scripts\activate
 
 # Streamlit 앱 실행
-streamlit run ui/app.py
+python -m streamlit run ui/app.py
 
 # 단위 테스트
 pytest tests/
 ```
+

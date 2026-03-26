@@ -1,5 +1,5 @@
 """
-GPT-4 API 호출 래퍼.
+GPT-4o-mini API 호출 래퍼.
 
 - tiktoken으로 토큰 예산 관리
 - json_object 모드로 파싱 가능한 응답 보장
@@ -37,7 +37,7 @@ def generate(
     max_retries: int = 2,
 ) -> AgentOutput:
     """
-    GPT-4에 요청하고 AgentOutput을 반환.
+    GPT-4o-mini에 요청하고 AgentOutput을 반환.
 
     Args:
         user_context: context_builder.build_user_context() 결과
@@ -52,9 +52,10 @@ def generate(
         {"role": "user", "content": trimmed_context},
     ]
 
+    last_exc: Exception = RuntimeError("No attempts made")
     for attempt in range(max_retries + 1):
         try:
-            logger.info(f"Calling GPT-4 (purpose={purpose}, attempt={attempt + 1})")
+            logger.info(f"Calling GPT-4o-mini (purpose={purpose}, attempt={attempt + 1})")
             response = _get_client().chat.completions.create(
                 model=OPENAI_MODEL,
                 messages=messages,
@@ -71,12 +72,14 @@ def generate(
 
         except json.JSONDecodeError as e:
             logger.warning(f"JSON parse error (attempt {attempt + 1}): {e}")
+            last_exc = e
         except Exception as e:
-            logger.warning(f"GPT-4 call failed (attempt {attempt + 1}): {e}")
+            logger.warning(f"GPT-4o-mini call failed (attempt {attempt + 1}): {type(e).__name__}: {e}")
+            last_exc = e
             if attempt < max_retries:
                 time.sleep(1)
 
-    raise RuntimeError(f"GPT-4 failed after {max_retries + 1} attempts")
+    raise RuntimeError(f"GPT-4o-mini failed after {max_retries + 1} attempts") from last_exc
 
 
 def enrich_checklist_reasons(
@@ -137,7 +140,7 @@ def _trim_to_budget(user_context: str, system_prompt: str) -> str:
     """
     try:
         import tiktoken
-        enc = tiktoken.encoding_for_model("gpt-4o")
+        enc = tiktoken.encoding_for_model("gpt-4o-mini")
         system_tokens = len(enc.encode(system_prompt))
         context_tokens = len(enc.encode(user_context))
         total = system_tokens + context_tokens
