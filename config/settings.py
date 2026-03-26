@@ -16,7 +16,7 @@ BQ_DATASETS = {
 
 # --- OpenAI ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = "gpt-4o"
+OPENAI_MODEL = "gpt-4o-mini"
 OPENAI_JUDGE_MODEL = "gpt-4o"  # LLM judge for evaluation
 
 # --- App ---

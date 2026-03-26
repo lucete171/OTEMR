@@ -18,9 +18,12 @@ from agent.summarizer import generate
 from config.lab_profiles import get_item_ids_for_purpose_and_diagnoses
 from data import cache
 from data.demo_patients import DEMO_CASES, get_case
+from data.loader import load_demo_patient
 
 # Fixture fallback (BQ 없을 때)
 from tests.fixtures.patient_dm_ckd import get_fixture as get_dm_ckd_fixture
+
+DEMO_SUBJECT_IDS = {c.subject_id for c in DEMO_CASES}
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,13 +55,21 @@ PURPOSE_DESCRIPTIONS = {
 # ──────────────────────────────────────────────
 
 def load_patient_record(subject_id: int, purpose: str):
-    """캐시에서 로드, 없으면 fixture 사용."""
+    """캐시 → demo parquet → BQ → fixture 순으로 로드."""
     cache_key = f"{subject_id}_{purpose}_180"
     cached = cache.load(cache_key)
     if cached is not None:
         return cached, "cache"
 
-    # BQ 없는 경우 fixture fallback
+    # demo parquet
+    if subject_id in DEMO_SUBJECT_IDS:
+        try:
+            record = load_demo_patient(subject_id, purpose)
+            return record, "demo"
+        except Exception as e:
+            logger.warning(f"Demo parquet load failed for {subject_id}: {e}")
+
+    # fixture (99001 전용)
     if subject_id == 99001:
         record = get_dm_ckd_fixture()
         record.purpose = purpose

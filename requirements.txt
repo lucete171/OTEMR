@@ -9,7 +9,7 @@ numpy==1.26.4
 scipy==1.13.0
 
 # LLM
-openai==1.30.0
+openai>=2.0.0
 tiktoken==0.7.0
 
 # Structured output validation
