@@ -7,7 +7,8 @@ PatientRecord 데이터클래스와 멀티 테이블 fetch 오케스트레이터
 """
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
@@ -265,3 +266,138 @@ def _parse_notes(df: pd.DataFrame) -> list[DischargeNote]:
             text_excerpt=str(row.get("text_excerpt", "")),
         ))
     return result
+
+
+# ──────────────────────────────────────────────
+# Parquet 로더
+# ──────────────────────────────────────────────
+
+DEMO_DIR = Path(__file__).parent / "demo"
+PROCESSED_DIR = Path(__file__).parent / "processed"
+
+_PARQUET_FILE_MAP = {
+    # (is_demo, table) → filename
+    (True,  "patients"):      "demo_patients.parquet",
+    (True,  "admissions"):    "demo_admissions.parquet",
+    (True,  "diagnoses"):     "demo_diagnoses.parquet",
+    (True,  "labs"):          "demo_labs.parquet",
+    (True,  "prescriptions"): "demo_prescriptions.parquet",
+    (False, "patients"):      "patients_clean.parquet",
+    (False, "admissions"):    "admissions_clean.parquet",
+    (False, "diagnoses"):     "diagnoses.parquet",
+    (False, "labs"):          "labs_clean.parquet",
+    (False, "prescriptions"): "prescriptions_clean.parquet",
+}
+
+
+def _read_parquet(data_dir: Path, table: str) -> pd.DataFrame:
+    """parquet 파일을 읽어 DataFrame으로 반환.
+    dtype_backend='pyarrow'를 사용해 date32[day](dbdate) 타입 오류를 방지.
+    """
+    is_demo = "demo" in data_dir.name
+    filename = _PARQUET_FILE_MAP[(is_demo, table)]
+    path = data_dir / filename
+    return pd.read_parquet(path, dtype_backend="pyarrow")
+
+
+def load_patient_from_parquet(
+    subject_id: int,
+    purpose: str,
+    data_dir: Path,
+    lab_days: int = LAB_HISTORY_DAYS,
+) -> PatientRecord:
+    """
+    parquet 파일에서 환자 데이터를 로드하고 PatientRecord를 반환.
+
+    Args:
+        subject_id: MIMIC-IV subject_id
+        purpose: "rounds" | "preop" | "referral"
+        data_dir: DEMO_DIR 또는 PROCESSED_DIR
+        lab_days: 조회할 lab 기간 (일). 가장 최근 admittime 기준으로 소급.
+    """
+    # 1. 인구통계
+    pts_df = _read_parquet(data_dir, "patients")
+    pts_row = pts_df[pts_df["subject_id"] == subject_id]
+    if pts_row.empty:
+        raise ValueError(f"Patient {subject_id} not found in {data_dir}")
+    first = pts_row.iloc[0]
+
+    # 2. 입원 이력 (최신순)
+    adm_df = _read_parquet(data_dir, "admissions")
+    adm_df = adm_df[adm_df["subject_id"] == subject_id].copy()
+    adm_df["admittime"] = pd.to_datetime(adm_df["admittime"])
+    adm_df = adm_df.sort_values("admittime", ascending=False)
+    admissions = _parse_admissions(adm_df)
+
+    # 3. 진단 (가장 최근 입원)
+    current_hadm_id = admissions[0].hadm_id if admissions else None
+    diagnoses = []
+    if current_hadm_id:
+        diag_df = _read_parquet(data_dir, "diagnoses")
+        diag_df = diag_df[
+            (diag_df["subject_id"] == subject_id) &
+            (diag_df["hadm_id"] == current_hadm_id)
+        ]
+        diagnoses = _parse_diagnoses(diag_df)
+
+    # 4. Lab (목적 + 진단 기반 item_ids 필터, admittime 기준 날짜 필터)
+    icd_prefixes = [d.icd_code[:3] for d in diagnoses]
+    item_ids = get_item_ids_for_purpose_and_diagnoses(purpose, icd_prefixes)
+
+    lab_df = _read_parquet(data_dir, "labs")
+    lab_df = lab_df[lab_df["subject_id"] == subject_id].copy()
+    lab_df["charttime"] = pd.to_datetime(lab_df["charttime"])
+
+    if admissions:
+        cutoff = admissions[0].admittime - timedelta(days=lab_days)
+        lab_df = lab_df[lab_df["charttime"] >= cutoff]
+
+    lab_df = lab_df[lab_df["itemid"].isin(item_ids)]
+    labs = _parse_labs(lab_df)
+
+    # 5. 처방 (가장 최근 입원)
+    prescriptions = []
+    if current_hadm_id:
+        rx_df = _read_parquet(data_dir, "prescriptions")
+        rx_df = rx_df[
+            (rx_df["subject_id"] == subject_id) &
+            (rx_df["hadm_id"] == current_hadm_id)
+        ].copy()
+
+        # MIMIC 날짜는 2100년대로 이동돼 있어 stoptime > datetime.now() 가 항상 True.
+        # parquet의 사전 계산된 is_active 컬럼을 이용해 보정.
+        if "is_active" in rx_df.columns:
+            mask_inactive = rx_df["is_active"] == False  # noqa: E712
+            rx_df.loc[mask_inactive, "stoptime"] = datetime(2000, 1, 1)
+
+        prescriptions = _parse_prescriptions(rx_df)
+
+    return PatientRecord(
+        subject_id=subject_id,
+        gender=str(first.get("gender", "")),
+        anchor_age=int(first.get("anchor_age", 0)),
+        anchor_year_group=str(first.get("anchor_year_group", "")),
+        purpose=purpose,
+        admissions=admissions,
+        diagnoses=diagnoses,
+        labs=labs,
+        prescriptions=prescriptions,
+    )
+
+
+def load_demo_patient(
+    subject_id: int,
+    purpose: str,
+    lab_days: int = LAB_HISTORY_DAYS,
+) -> PatientRecord:
+    """data/demo/ parquet에서 환자 로드."""
+    return load_patient_from_parquet(subject_id, purpose, DEMO_DIR, lab_days)
+
+
+def load_processed_patient(
+    subject_id: int,
+    purpose: str,
+    lab_days: int = LAB_HISTORY_DAYS,
+) -> PatientRecord:
+    """data/processed/ parquet에서 환자 로드."""
+    return load_patient_from_parquet(subject_id, purpose, PROCESSED_DIR, lab_days)

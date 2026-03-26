@@ -26,27 +26,27 @@ class DemoCase:
 DEMO_CASES: list[DemoCase] = [
     DemoCase(
         case_id="A",
-        label="Case A: DM + CKD 진행",
-        subject_id=0,  # TODO: BQ 쿼리 후 채울 것
+        label="Case A: DM + CKD/ESRD",
+        subject_id=18767874,
         default_purpose="rounds",
-        description="당뇨 + 만성신장질환 3기 환자. Cr이 3회 입원에 걸쳐 상승 중.",
-        diagnosis_tags=["DM", "CKD", "HTN"],
+        description="71세 여성. T2DM + CKD stage5/ESRD + 투석 의존 + HTN + HF. 복합 대사·신장 문제.",
+        diagnosis_tags=["DM", "CKD/ESRD", "HTN", "HF"],
     ),
     DemoCase(
         case_id="B",
         label="Case B: 수술 전 심장 위험",
-        subject_id=0,  # TODO: BQ 쿼리 후 채울 것
+        subject_id=13303809,
         default_purpose="preop",
-        description="고혈압 + 관상동맥질환 환자. 항응고제 복용 중. 복강경 담낭절제술 예정.",
-        diagnosis_tags=["CAD", "HTN", "Anticoagulation"],
+        description="36세 여성. CAD + 과거 MI + CABG 시행력 + 항응고제 복용 중 + T1DM. 수술 전 평가.",
+        diagnosis_tags=["CAD", "old MI", "CABG", "Anticoagulation", "T1DM"],
     ),
     DemoCase(
         case_id="C",
-        label="Case C: 타과 의뢰",
-        subject_id=0,  # TODO: BQ 쿼리 후 채울 것
+        label="Case C: 복합 다계통 의뢰",
+        subject_id=12468016,
         default_purpose="referral",
-        description="간경화 + 복수 환자. 간담도외과 의뢰 예정.",
-        diagnosis_tags=["Cirrhosis", "Ascites", "HE"],
+        description="50세 남성. CKD + HF + COPD + AKI + Crohn's. 복합 다계통 환자, 타과 의뢰.",
+        diagnosis_tags=["CKD", "HF", "COPD", "AKI", "Crohn's"],
     ),
 ]
 
