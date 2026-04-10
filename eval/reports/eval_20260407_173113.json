@@ -1,0 +1,171 @@
+{
+  "run_at": "2026-04-07T17:31:13",
+  "cases": [
+    {
+      "name": "dm_ckd_rounds",
+      "rule_eval": {
+        "trend_accuracy": {
+          "passed": 3,
+          "failed": 0
+        },
+        "flag_detection": {
+          "passed": 1,
+          "failed": 0
+        },
+        "absent_flags": {
+          "passed": 2,
+          "failed": 0
+        },
+        "checklist_keywords": {
+          "passed": 1,
+          "failed": 0
+        },
+        "schema_validation": {
+          "passed": 11,
+          "failed": 0
+        },
+        "pass_rate": 1.0,
+        "passed": 18,
+        "failed": 0,
+        "total": 18,
+        "checks": [
+          {
+            "name": "trend_direction:Creatinine",
+            "passed": true,
+            "expected": "WORSENING",
+            "actual": "WORSENING",
+            "detail": "last_value=2.10"
+          },
+          {
+            "name": "trend_direction:Hemoglobin",
+            "passed": true,
+            "expected": "WORSENING",
+            "actual": "WORSENING",
+            "detail": "last_value=10.70"
+          },
+          {
+            "name": "trend_direction:BUN",
+            "passed": true,
+            "expected": "WORSENING",
+            "actual": "WORSENING",
+            "detail": "last_value=35.00"
+          },
+          {
+            "name": "flag_severity:Creatinine",
+            "passed": true,
+            "expected": "MEDIUM",
+            "actual": "MEDIUM",
+            "detail": "Creatinine 2.10 mg/dL [HIGH] — +10.5% vs previous"
+          },
+          {
+            "name": "absent_flag:Sodium",
+            "passed": true,
+            "expected": "NOT_FLAGGED",
+            "actual": "NOT_FLAGGED",
+            "detail": ""
+          },
+          {
+            "name": "absent_flag:INR",
+            "passed": true,
+            "expected": "NOT_FLAGGED",
+            "actual": "NOT_FLAGGED",
+            "detail": ""
+          },
+          {
+            "name": "checklist_keyword:metformin",
+            "passed": true,
+            "expected": "contains 'metformin'",
+            "actual": "found",
+            "detail": ""
+          },
+          {
+            "name": "schema:patient_summary_nonempty",
+            "passed": true,
+            "expected": "non-empty string",
+            "actual": "'65세 남성, 만성 신장 질환 및 당뇨병으로 입원 중.'",
+            "detail": ""
+          },
+          {
+            "name": "schema:flag[0].severity",
+            "passed": true,
+            "expected": "HIGH|MEDIUM|LOW",
+            "actual": "MEDIUM",
+            "detail": ""
+          },
+          {
+            "name": "schema:flag[1].severity",
+            "passed": true,
+            "expected": "HIGH|MEDIUM|LOW",
+            "actual": "MEDIUM",
+            "detail": ""
+          },
+          {
+            "name": "schema:flag[2].severity",
+            "passed": true,
+            "expected": "HIGH|MEDIUM|LOW",
+            "actual": "MEDIUM",
+            "detail": ""
+          },
+          {
+            "name": "schema:checklist[0].urgency",
+            "passed": true,
+            "expected": "URGENT|ROUTINE|OPTIONAL",
+            "actual": "URGENT",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'i don't know'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'i do not know'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'hallucinate'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'as an ai'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'i cannot'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'n/a'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          }
+        ]
+      },
+      "llm_judge": {
+        "case_name": "dm_ckd_rounds"
+      }
+    }
+  ],
+  "summary": {
+    "rule_eval_pass_rate": 1.0,
+    "rule_eval_passed": 18,
+    "rule_eval_total": 18,
+    "llm_judge_avg_total": null
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "run_at": "2026-04-07T20:22:44",
+  "cases": [
+    {
+      "name": "dm_ckd_rounds",
+      "rule_eval": {
+        "trend_accuracy": {
+          "passed": 3,
+          "failed": 0
+        },
+        "flag_detection": {
+          "passed": 1,
+          "failed": 0
+        },
+        "absent_flags": {
+          "passed": 2,
+          "failed": 0
+        },
+        "checklist_keywords": {
+          "passed": 1,
+          "failed": 0
+        },
+        "schema_validation": {
+          "passed": 11,
+          "failed": 0
+        },
+        "pass_rate": 1.0,
+        "passed": 18,
+        "failed": 0,
+        "total": 18,
+        "checks": [
+          {
+            "name": "trend_direction:Creatinine",
+            "passed": true,
+            "expected": "WORSENING",
+            "actual": "WORSENING",
+            "detail": "last_value=2.10"
+          },
+          {
+            "name": "trend_direction:Hemoglobin",
+            "passed": true,
+            "expected": "WORSENING",
+            "actual": "WORSENING",
+            "detail": "last_value=10.70"
+          },
+          {
+            "name": "trend_direction:BUN",
+            "passed": true,
+            "expected": "WORSENING",
+            "actual": "WORSENING",
+            "detail": "last_value=35.00"
+          },
+          {
+            "name": "flag_severity:Creatinine",
+            "passed": true,
+            "expected": "MEDIUM",
+            "actual": "MEDIUM",
+            "detail": "Creatinine 2.10 mg/dL [HIGH] — +10.5% vs previous"
+          },
+          {
+            "name": "absent_flag:Sodium",
+            "passed": true,
+            "expected": "NOT_FLAGGED",
+            "actual": "NOT_FLAGGED",
+            "detail": ""
+          },
+          {
+            "name": "absent_flag:INR",
+            "passed": true,
+            "expected": "NOT_FLAGGED",
+            "actual": "NOT_FLAGGED",
+            "detail": ""
+          },
+          {
+            "name": "checklist_keyword:metformin",
+            "passed": true,
+            "expected": "contains 'metformin'",
+            "actual": "found",
+            "detail": ""
+          },
+          {
+            "name": "schema:patient_summary_nonempty",
+            "passed": true,
+            "expected": "non-empty string",
+            "actual": "'65세 남성, 만성 신장 질환 및 당뇨병으로 입원 중.'",
+            "detail": ""
+          },
+          {
+            "name": "schema:flag[0].severity",
+            "passed": true,
+            "expected": "HIGH|MEDIUM|LOW",
+            "actual": "MEDIUM",
+            "detail": ""
+          },
+          {
+            "name": "schema:flag[1].severity",
+            "passed": true,
+            "expected": "HIGH|MEDIUM|LOW",
+            "actual": "MEDIUM",
+            "detail": ""
+          },
+          {
+            "name": "schema:flag[2].severity",
+            "passed": true,
+            "expected": "HIGH|MEDIUM|LOW",
+            "actual": "MEDIUM",
+            "detail": ""
+          },
+          {
+            "name": "schema:checklist[0].urgency",
+            "passed": true,
+            "expected": "URGENT|ROUTINE|OPTIONAL",
+            "actual": "URGENT",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'i don't know'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'i do not know'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'hallucinate'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'as an ai'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'i cannot'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          },
+          {
+            "name": "schema:no_forbidden:'n/a'",
+            "passed": true,
+            "expected": "absent",
+            "actual": "absent",
+            "detail": ""
+          }
+        ]
+      },
+      "llm_judge": {
+        "case_name": "dm_ckd_rounds",
+        "factual_groundedness": 5,
+        "clinical_completeness": 5,
+        "hallucination_free": 5,
+        "purpose_alignment": 5,
+        "actionability": 5,
+        "total": 25.0,
+        "rationales": {
+          "factual_groundedness": "모든 정보는 환자 컨텍스트 데이터에 정확히 기초하고 있습니다.",
+          "clinical_completeness": "모든 주요 소견 및 urgent 체크리스트가 임상 브리핑에 반영되었습니다.",
+          "hallucination_free": "컨텍스트 외의 정보는 생성되지 않았습니다.",
+          "purpose_alignment": "rounds 목적에 맞게 환자의 상태와 관리 변화 필요성이 강조되었습니다.",
+          "actionability": "권고 사항은 구체적이고 임상적으로 실행 가능한 지침을 포함하고 있습니다."
+        }
+      }
+    }
+  ],
+  "summary": {
+    "rule_eval_pass_rate": 1.0,
+    "rule_eval_passed": 18,
+    "rule_eval_total": 18,
+    "llm_judge_avg_total": 25.0
+  }
+}
