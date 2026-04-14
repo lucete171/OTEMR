@@ -12,6 +12,7 @@ BASE_LAB_ITEM_IDS = [
     51222,  # Hemoglobin
     51301,  # White Blood Cells
     51265,  # Platelet Count
+    53189,  # Platelet Count (duplicate itemid)
 
     # BMP
     50983,  # Sodium
@@ -105,17 +106,40 @@ LAB_META = {
         "worsening_direction": "both",
         "min_meaningful_delta": 1.0,
     },
+    50802: {
+        "label": "Base Excess",
+        "unit": "mEq/L",
+        "ref_range": (-2.0, 2.0),
+        "worsening_direction": "both",
+        "min_meaningful_delta": 1.0,
+    },
+    50820: {
+        "label": "pH",
+        "unit": "",
+        "ref_range": (7.35, 7.45),
+        "worsening_direction": "both",
+        "min_meaningful_delta": 0.05,
+    },
+# lab_profiles.py 수정 — 51265, 53189 둘 다
     51265: {
         "label": "Platelet",
         "unit": "K/uL",
-        "ref_range": (150, 400),
+        "ref_range": (150, 450),  # 400 → 450으로 조정
         "worsening_direction": "down",
         "min_meaningful_delta": 20,
     },
+    53189: {
+        "label": "Platelet",
+        "unit": "K/uL",
+        "ref_range": (150, 450),  # 400 → 450으로 조정
+        "worsening_direction": "down",
+        "min_meaningful_delta": 20,
+    },
+    # lab_profiles.py 수정
     50983: {
         "label": "Sodium",
         "unit": "mEq/L",
-        "ref_range": (136, 145),
+        "ref_range": (134, 146),
         "worsening_direction": "both",
         "min_meaningful_delta": 3,
     },
