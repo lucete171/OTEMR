@@ -7,6 +7,7 @@ rule_eval.py가 이 기대값과 실제 파이프라인 출력을 비교한다.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 from data.loader import PatientRecord
 
@@ -41,3 +42,11 @@ class EvalCase:
     # 2차 평가 —————————————————————————
     # LLM judge 최소 합격 점수 (25점 만점, 기본 18점)
     min_judge_total: float = 18.0
+
+    # 3차 평가 (고급 분석) ——————————————
+    # 예상 환자 상태: "STABLE" | "DETERIORATING" | "CRITICAL" | "RECOVERING"
+    expected_patient_state: Optional[str] = None
+    # 이상값으로 탐지되어야 할 lab label 목록 (예: ["Creatinine"])
+    expected_anomalous_labs: list[str] = field(default_factory=list)
+    # 다변량 패널 중 NORMAL이 아닌 것이어야 할 패널 목록 (예: ["RENAL", "ANEMIA"])
+    expected_multivariate_panels: list[str] = field(default_factory=list)

@@ -26,6 +26,7 @@ if str(_root) not in sys.path:
 
 from agent.context_builder import build_user_context
 from agent.summarizer import generate
+from analysis.advanced import run_advanced_analysis
 from analysis.checklist import generate_checklist
 from analysis.flags import detect_flags
 from analysis.trend import compute_trends
@@ -33,6 +34,11 @@ from config.lab_profiles import get_item_ids_for_purpose_and_diagnoses
 from eval import report as report_module
 from eval.cases.base import EvalCase
 from eval.evaluators import rule_eval
+from eval.evaluators.advanced_eval import (
+    detect_missed_critical_cases,
+    evaluate_advanced,
+    generate_debug_trace,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,7 +83,7 @@ def _load_all_cases() -> dict[str, EvalCase]:
 def run_case(
     case: EvalCase,
     skip_llm_judge: bool = False,
-) -> tuple[rule_eval.RuleEvalResult, dict]:
+) -> tuple[rule_eval.RuleEvalResult, dict, dict]:
     """한 케이스에 대해 전체 파이프라인 실행 + 평가."""
     logger.info(f"[{case.name}] 파이프라인 실행 중...")
     t0 = time.time()
@@ -91,8 +97,19 @@ def run_case(
     flags = detect_flags(trends)
     checklist = generate_checklist(record, trends, flags)
 
+    # --- 고급 분석 ---
+    advanced = run_advanced_analysis(
+        subject_id=record.subject_id,
+        trends=trends,
+        flags=flags,
+    )
+    logger.info(
+        f"[{case.name}] 고급 분석 완료 — "
+        f"patient_state={advanced.patient_state}, score={advanced.deterioration_score}"
+    )
+
     # --- LLM 요약 ---
-    user_context = build_user_context(record, trends, flags, checklist)
+    user_context = build_user_context(record, trends, flags, checklist, advanced=advanced)
     try:
         agent_output = generate(user_context=user_context, purpose=purpose)
     except Exception as e:
@@ -111,6 +128,17 @@ def run_case(
         agent_output=agent_output,
     )
 
+    # --- 고급 분석 평가 ---
+    adv_result = evaluate_advanced(case=case, advanced=advanced)
+    missed = detect_missed_critical_cases(flags=flags, advanced=advanced)
+    if missed:
+        for m in missed:
+            logger.warning(f"[{case.name}] {m}")
+    if adv_result.total > 0:
+        logger.info(
+            f"[{case.name}] 고급 평가: {adv_result.passed}/{adv_result.total} 통과"
+        )
+
     # --- 2차 평가 ---
     judge_result: dict = {"case_name": case.name}
     if not skip_llm_judge and agent_output is not None:
@@ -126,8 +154,8 @@ def run_case(
         except Exception as e:
             logger.warning(f"[{case.name}] LLM Judge 실패: {e}")
 
-    _print_case_summary(case.name, re_result, judge_result)
-    return re_result, judge_result
+    _print_case_summary(case.name, re_result, judge_result, adv_result)
+    return re_result, judge_result, generate_debug_trace(advanced)
 
 
 # ──────────────────────────────────────────────
@@ -138,7 +166,9 @@ def _print_case_summary(
     name: str,
     re_result: rule_eval.RuleEvalResult,
     judge_result: dict,
+    adv_result=None,
 ) -> None:
+    from eval.evaluators.advanced_eval import AdvancedEvalResult
     ok = "PASS" if re_result.pass_rate >= 0.95 else "FAIL"
     print(f"\n{'='*60}")
     print(f"  Case: {name}")
@@ -149,6 +179,14 @@ def _print_case_summary(
     if failed:
         for c in failed:
             print(f"    [FAIL] {c.name}: expected={c.expected!r} actual={c.actual!r}")
+
+    # 고급 분석 평가
+    if isinstance(adv_result, AdvancedEvalResult) and adv_result.total > 0:
+        adv_ok = "PASS" if adv_result.pass_rate >= 1.0 else "FAIL"
+        print(f"  Adv Eval  [{adv_ok}] {adv_result.passed}/{adv_result.total}")
+        for c in adv_result.all_checks:
+            if not c.passed:
+                print(f"    [FAIL] {c.name}: expected={c.expected!r} actual={c.actual!r}")
 
     # Judge 점수
     total = judge_result.get("total")
@@ -195,7 +233,7 @@ def main() -> None:
     judge_results = []
 
     for case in selected:
-        rr, jr = run_case(case, skip_llm_judge=args.skip_llm_judge)
+        rr, jr, _ = run_case(case, skip_llm_judge=args.skip_llm_judge)
         rule_results.append(rr)
         if jr:
             judge_results.append(jr)
