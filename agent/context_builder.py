@@ -12,6 +12,8 @@ PatientRecord + 분석 결과 → 프롬프트 user message 조립.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Optional
+
 from analysis.checklist import ChecklistItem
 from analysis.diagnosis_context import extract_tags, format_tags_for_prompt
 from analysis.flags import ChangeFlag
@@ -19,14 +21,23 @@ from analysis.trend import TrendResult
 from config.settings import MAX_MEDICATIONS
 from data.loader import PatientRecord
 
+if TYPE_CHECKING:
+    from models.clinical_output import ClinicalAnalysisOutput
+
 
 def build_user_context(
     record: PatientRecord,
     trends: dict[int, TrendResult],
     flags: list[ChangeFlag],
     checklist: list[ChecklistItem],
+    advanced: Optional["ClinicalAnalysisOutput"] = None,
 ) -> str:
-    """프롬프트에 삽입할 구조화된 환자 컨텍스트 문자열 생성."""
+    """
+    프롬프트에 삽입할 구조화된 환자 컨텍스트 문자열 생성.
+
+    advanced가 제공되면 고급 분석 섹션(환자 상태, 다변량 신호, 이상값)을 추가.
+    기본값 None이므로 기존 호출부는 변경 없이 동작.
+    """
     sections = [
         _demographics_section(record),
         _diagnoses_section(record),
@@ -35,6 +46,7 @@ def build_user_context(
         _labs_section(trends),
         _flags_section(flags),
         _checklist_section(checklist),
+        _advanced_section(advanced),
         _notes_section(record),
     ]
     return "\n\n".join(s for s in sections if s)
@@ -151,6 +163,54 @@ def _checklist_section(checklist: list[ChecklistItem]) -> str:
     for item in checklist:
         lines.append(f"  [{item.urgency}] {item.item}")
         lines.append(f"    WHY: {item.reason}")
+    return "\n".join(lines)
+
+
+def _advanced_section(advanced: Optional["ClinicalAnalysisOutput"]) -> str:
+    """
+    고급 분석 결과 섹션.
+
+    advanced=None이면 빈 문자열 반환 (기존 파이프라인과 호환).
+    LLM이 환자 상태와 다변량 신호를 인식하도록 컨텍스트 보강.
+    """
+    if advanced is None:
+        return ""
+
+    state_kr = {
+        "STABLE": "안정",
+        "DETERIORATING": "악화 중",
+        "CRITICAL": "위중",
+        "RECOVERING": "회복 중",
+    }
+    state_label = state_kr.get(advanced.patient_state, advanced.patient_state)
+    lines = [
+        "=== ADVANCED CLINICAL SIGNALS ===",
+        f"Patient State: {advanced.patient_state} ({state_label})",
+    ]
+
+    # 다변량 패널 (NORMAL 제외)
+    non_normal = [s for s in advanced.multivariate_signals if s.severity != "NORMAL"]
+    if non_normal:
+        lines.append("Multivariate Panels:")
+        for sig in non_normal:
+            lines.append(f"  [{sig.severity}] {sig.panel}: {sig.interpretation}")
+
+    # 통계적 이상값
+    anomalies = [s for s in advanced.trend_summaries if s.is_anomaly]
+    if anomalies:
+        labels = ", ".join(
+            f"{s.label} (z={s.anomaly_score:.2f})"
+            for s in anomalies
+            if s.anomaly_score is not None
+        )
+        lines.append(f"Statistical Anomalies: {labels}")
+
+    # 변화점
+    changepoints = [s for s in advanced.trend_summaries if s.change_point_detected]
+    if changepoints:
+        labels = ", ".join(s.label for s in changepoints)
+        lines.append(f"Structural Change Points Detected: {labels}")
+
     return "\n".join(lines)
 
 

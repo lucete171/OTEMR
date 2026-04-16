@@ -1,6 +1,8 @@
 """
 Altair 스파크라인 컴포넌트.
 """
+from typing import Optional
+
 import pandas as pd
 import streamlit as st
 
@@ -11,6 +13,7 @@ except ImportError:
     HAS_ALTAIR = False
 
 from analysis.trend import TrendResult
+from models.clinical_output import TrendSummary
 
 DIRECTION_COLORS = {
     "WORSENING": "#e74c3c",
@@ -21,8 +24,15 @@ DIRECTION_COLORS = {
 }
 
 
-def render_trend_row(trend: TrendResult) -> None:
-    """Lab 트렌드 한 행 렌더링 (label + 스파크라인 + 값 + 방향)."""
+def render_trend_row(
+    trend: TrendResult,
+    summary: Optional[TrendSummary] = None,
+) -> None:
+    """
+    Lab 트렌드 한 행 렌더링 (label + 스파크라인 + 값 + 방향).
+
+    summary가 제공되면 이상값(⚡) / 변화점(📍) 배지를 추가로 표시.
+    """
     col1, col2, col3 = st.columns([2, 3, 2])
 
     with col1:
@@ -32,11 +42,25 @@ def render_trend_row(trend: TrendResult) -> None:
             "NORMAL": "🟢",
             "UNKNOWN": "⚪",
         }.get(trend.ref_flag, "⚪")
-        st.markdown(f"**{trend.label}** {ref_badge}")
+
+        # 고급 분석 배지
+        adv_badges = ""
+        if summary is not None:
+            if summary.is_anomaly:
+                z_str = f"z={summary.anomaly_score:.1f}" if summary.anomaly_score else ""
+                adv_badges += f" <span title='통계적 이상값 {z_str}' style='cursor:help'>⚡</span>"
+            if summary.change_point_detected:
+                conf_str = f"{summary.change_point_confidence:.0%}"
+                adv_badges += f" <span title='변화점 감지 ({conf_str})' style='cursor:help'>📍</span>"
+
+        st.markdown(
+            f"**{trend.label}** {ref_badge}{adv_badges}",
+            unsafe_allow_html=True,
+        )
 
     with col2:
         if trend.sparkline and len(trend.sparkline) >= 2 and HAS_ALTAIR:
-            _render_sparkline(trend)
+            _render_sparkline(trend, summary=summary)
         elif not trend.has_recent_data:
             st.caption("데이터 없음")
         else:
@@ -62,13 +86,16 @@ def render_trend_row(trend: TrendResult) -> None:
             st.caption("—")
 
 
-def _render_sparkline(trend: TrendResult) -> None:
+def _render_sparkline(
+    trend: TrendResult,
+    summary: Optional[TrendSummary] = None,
+) -> None:
     df = pd.DataFrame(trend.sparkline, columns=["date", "value"])
     df["date"] = pd.to_datetime(df["date"])
 
     color = DIRECTION_COLORS.get(trend.direction, "#95a5a6")
 
-    chart = (
+    line = (
         alt.Chart(df)
         .mark_line(color=color, strokeWidth=2)
         .encode(
@@ -81,4 +108,31 @@ def _render_sparkline(trend: TrendResult) -> None:
         )
         .properties(width=150, height=50)
     )
+
+    # 변화점 위치에 수직 규칙선 추가
+    if (
+        summary is not None
+        and summary.change_point_detected
+        and summary.change_point_index is not None
+    ):
+        cp_idx = summary.change_point_index
+        # sparkline은 최대 10개로 thin 처리 — raw index를 sparkline index로 근사
+        n_spark = len(trend.sparkline)
+        n_raw = trend.n_points
+        # sparkline index 비례 계산
+        spark_idx = min(int(cp_idx * n_spark / max(n_raw, 1)), n_spark - 1)
+        if 0 <= spark_idx < n_spark:
+            cp_date = df["date"].iloc[spark_idx]
+            cp_df = pd.DataFrame({"date": [cp_date]})
+            rule = (
+                alt.Chart(cp_df)
+                .mark_rule(color="#e67e22", strokeWidth=1.5, strokeDash=[3, 3])
+                .encode(x="date:T")
+            )
+            chart = line + rule
+        else:
+            chart = line
+    else:
+        chart = line
+
     st.altair_chart(chart, use_container_width=False)

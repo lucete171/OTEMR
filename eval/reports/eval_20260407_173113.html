@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTEMR Eval Report — 2026-04-07T17:31:13</title>
+<style>
+  :root {
+    --green: #16a34a; --yellow: #d97706; --red: #dc2626;
+    --green-bg: #dcfce7; --yellow-bg: #fef3c7; --red-bg: #fee2e2;
+    --gray: #6b7280; --border: #e5e7eb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: #f9fafb; color: #111827; font-size: 14px; line-height: 1.5; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .meta { color: var(--gray); font-size: 12px; margin-bottom: 24px; }
+
+  /* Summary cards */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                  gap: 12px; margin-bottom: 32px; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 10px;
+           padding: 16px; text-align: center; }
+  .card .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+                  color: var(--gray); margin-bottom: 6px; }
+  .card .value { font-size: 28px; font-weight: 700; }
+  .card .sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  /* Case section */
+  .case-block { background: #fff; border: 1px solid var(--border); border-radius: 10px;
+                 margin-bottom: 20px; overflow: hidden; }
+  .case-header { display: flex; align-items: center; justify-content: space-between;
+                  padding: 14px 18px; border-bottom: 1px solid var(--border);
+                  background: #f8fafc; }
+  .case-header h2 { font-size: 15px; font-weight: 600; }
+  .case-body { padding: 18px; }
+
+  /* Category rows */
+  .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                   gap: 10px; margin-bottom: 18px; }
+  .cat-item { background: #f9fafb; border: 1px solid var(--border); border-radius: 8px;
+               padding: 10px 12px; }
+  .cat-item .cat-name { font-size: 11px; color: var(--gray); text-transform: uppercase;
+                         letter-spacing: .04em; margin-bottom: 4px; }
+  .cat-item .cat-score { font-size: 18px; font-weight: 700; }
+
+  /* Progress bar */
+  .progress-wrap { background: #e5e7eb; border-radius: 4px; height: 6px;
+                   overflow: hidden; margin-top: 6px; }
+  .progress-bar { height: 100%; border-radius: 4px; transition: width .3s; }
+
+  /* LLM Judge scores */
+  .judge-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+                margin-bottom: 18px; }
+  .judge-dim { text-align: center; }
+  .judge-dim .dim-name { font-size: 10px; color: var(--gray); margin-bottom: 4px; }
+  .judge-dim .dim-score { font-size: 20px; font-weight: 700; }
+  .judge-rationale { background: #f9fafb; border-left: 3px solid var(--border);
+                      padding: 8px 12px; font-size: 12px; color: var(--gray);
+                      border-radius: 0 6px 6px 0; margin-bottom: 18px; }
+
+  /* Check table */
+  details { margin-top: 4px; }
+  summary { cursor: pointer; font-size: 12px; color: var(--gray);
+             user-select: none; padding: 4px 0; }
+  summary:hover { color: #374151; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+  th { text-align: left; padding: 6px 10px; background: #f3f4f6;
+        border-bottom: 1px solid var(--border); font-weight: 600; color: var(--gray); }
+  td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Badges */
+  .badge { display: inline-block; border-radius: 4px; padding: 1px 7px;
+            font-size: 11px; font-weight: 600; }
+  .badge-pass { background: var(--green-bg); color: var(--green); }
+  .badge-fail { background: var(--red-bg); color: var(--red); }
+  .badge-high { background: var(--red-bg); color: var(--red); }
+  .badge-med { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-low { background: #eff6ff; color: #2563eb; }
+
+  .no-judge { color: var(--gray); font-style: italic; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>OTEMR 평가 리포트</h1>
+  <p class="meta">실행 시각: 2026-04-07T17:31:13 &nbsp;|&nbsp; 케이스 수: 1</p>
+
+  <div class="summary-grid">
+    <div class="card">
+      <div class="label">Rule Eval Pass Rate</div>
+      <div class="value" style="color: var(--green)">100.0%</div>
+      <div class="sub">18 / 18 checks</div>
+    </div>
+    <div class="card">
+      <div class="label">LLM Judge 평균</div>
+      <div class="value" style="color: var(--red)">—</div>
+      <div class="sub">5개 차원 × 5점</div>
+    </div>
+    <div class="card">
+      <div class="label">케이스 수</div>
+      <div class="value">1</div>
+      <div class="sub">평가된 환자 케이스</div>
+    </div>
+  </div>
+
+  
+<div class="case-block">
+  <div class="case-header">
+    <h2>dm_ckd_rounds</h2>
+    <span class="badge badge-pass">100.0% (18/18)</span>
+  </div>
+  <div class="case-body">
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px; font-weight:600; color:var(--gray); margin-bottom:8px">RULE EVAL</div>
+      <div class="category-grid">
+        <div class="cat-item">
+          <div class="cat-name">Trend 방향</div>
+          <div class="cat-score" style="color: var(--green)">3/3</div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:100%; background: var(--green)"></div>
+          </div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-name">Flag 감지</div>
+          <div class="cat-score" style="color: var(--green)">1/1</div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:100%; background: var(--green)"></div>
+          </div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-name">Absent Flags</div>
+          <div class="cat-score" style="color: var(--green)">2/2</div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:100%; background: var(--green)"></div>
+          </div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-name">Checklist</div>
+          <div class="cat-score" style="color: var(--green)">1/1</div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:100%; background: var(--green)"></div>
+          </div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-name">스키마</div>
+          <div class="cat-score" style="color: var(--green)">11/11</div>
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width:100%; background: var(--green)"></div>
+          </div>
+        </div></div>
+      
+    <details>
+      <summary>전체 체크 항목 보기 (18/18)</summary>
+      <table>
+        <thead><tr><th>Check</th><th>결과</th><th>기대</th><th>실제</th><th>비고</th></tr></thead>
+        <tbody>
+        <tr>
+          <td>trend_direction:Creatinine</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>WORSENING</td>
+          <td>WORSENING</td>
+          <td style="color: var(--gray)">last_value=2.10</td>
+        </tr>
+        <tr>
+          <td>trend_direction:Hemoglobin</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>WORSENING</td>
+          <td>WORSENING</td>
+          <td style="color: var(--gray)">last_value=10.70</td>
+        </tr>
+        <tr>
+          <td>trend_direction:BUN</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>WORSENING</td>
+          <td>WORSENING</td>
+          <td style="color: var(--gray)">last_value=35.00</td>
+        </tr>
+        <tr>
+          <td>flag_severity:Creatinine</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>MEDIUM</td>
+          <td>MEDIUM</td>
+          <td style="color: var(--gray)">Creatinine 2.10 mg/dL [HIGH] — +10.5% vs previous</td>
+        </tr>
+        <tr>
+          <td>absent_flag:Sodium</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>NOT_FLAGGED</td>
+          <td>NOT_FLAGGED</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>absent_flag:INR</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>NOT_FLAGGED</td>
+          <td>NOT_FLAGGED</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>checklist_keyword:metformin</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>contains 'metformin'</td>
+          <td>found</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:patient_summary_nonempty</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>non-empty string</td>
+          <td>'65세 남성, 만성 신장 질환 및 당뇨병으로 입원 중.'</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:flag[0].severity</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>HIGH|MEDIUM|LOW</td>
+          <td>MEDIUM</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:flag[1].severity</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>HIGH|MEDIUM|LOW</td>
+          <td>MEDIUM</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:flag[2].severity</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>HIGH|MEDIUM|LOW</td>
+          <td>MEDIUM</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:checklist[0].urgency</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>URGENT|ROUTINE|OPTIONAL</td>
+          <td>URGENT</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:no_forbidden:'i don't know'</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>absent</td>
+          <td>absent</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:no_forbidden:'i do not know'</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>absent</td>
+          <td>absent</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:no_forbidden:'hallucinate'</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>absent</td>
+          <td>absent</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:no_forbidden:'as an ai'</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>absent</td>
+          <td>absent</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:no_forbidden:'i cannot'</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>absent</td>
+          <td>absent</td>
+          <td style="color: var(--gray)"></td>
+        </tr>
+        <tr>
+          <td>schema:no_forbidden:'n/a'</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+          <td>absent</td>
+          <td>absent</td>
+          <td style="color: var(--gray)"></td>
+        </tr></tbody>
+      </table>
+    </details>
+    </div>
+    <div style="margin-top:18px; padding-top:16px; border-top: 1px solid var(--border)">
+      <div style="font-size:12px; font-weight:600; color:var(--gray); margin-bottom:10px">LLM JUDGE</div>
+      <p class="no-judge">LLM Judge 결과 없음 (--skip-llm-judge)</p>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

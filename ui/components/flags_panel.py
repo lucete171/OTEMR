@@ -44,6 +44,7 @@ def render_flags_panel(flags: list[ChangeFlag]) -> None:
                         padding: 8px 12px;
                         margin-bottom: 6px;
                         border-radius: 4px;
+                        color: #1a1a1a;
                     ">
                         <span style="font-weight:bold">{cfg['icon']} {flag.label}</span>
                         &nbsp;—&nbsp;{flag.trend_message}
@@ -71,6 +72,7 @@ def _render_flag_card(flag: ChangeFlag) -> None:
             padding: 8px 12px;
             margin-bottom: 6px;
             border-radius: 4px;
+            color: #1a1a1a;
         ">
             <span style="font-weight:bold">{cfg['icon']} {flag.label}</span>
             &nbsp;—&nbsp;{flag.message}

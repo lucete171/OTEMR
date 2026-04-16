@@ -10,6 +10,7 @@ MIMIC-IV itemid 참고: https://mimic.mit.edu/docs/iv/modules/hosp/d_labitems/
 BASE_LAB_ITEM_IDS = [
     # CBC
     51222,  # Hemoglobin
+    51250,  # MCV (다변량 빈혈 패널용)
     51301,  # White Blood Cells
     51265,  # Platelet Count
     53189,  # Platelet Count (duplicate itemid)
@@ -233,6 +234,15 @@ LAB_META = {
         "ref_range": (4.0, 5.6),
         "worsening_direction": "up",
         "min_meaningful_delta": 0.3,
+    },
+    51250: {
+        "label": "MCV",
+        "unit": "fL",
+        "ref_range": (80.0, 100.0),
+        # MCV만으로 worsening 방향을 정의하기 어려움 — 빈혈 유형에 따라 의미가 달라짐
+        # 다변량 분석(multivariate.py)에서 Hgb와 함께 해석
+        "worsening_direction": "both",
+        "min_meaningful_delta": 5.0,
     },
     50813: {
         "label": "Lactate",

@@ -51,6 +51,12 @@ class TrendResult:
     # 원본 포인트 수
     n_points: int = 0
 
+    # 고급 분석용 raw 시계열 (IQR 제거 전 원본값)
+    # analysis/advanced.py에서 remove_outliers_iqr() 후 EWMA/변화점/이상감지에 사용
+    # UI/LLM 컨텍스트에는 노출되지 않음
+    _raw_values: list[float] = field(default_factory=list, repr=False)
+    _raw_times_days: list[float] = field(default_factory=list, repr=False)
+
     @property
     def has_recent_data(self) -> bool:
         """최근값이 존재하는지."""
@@ -121,10 +127,12 @@ def _compute_single(item_id: int, events: list[LabEvent]) -> TrendResult:
     worsening_dir = meta.get("worsening_direction", "both")
     min_delta = meta.get("min_meaningful_delta", 0)
 
-    # 시간 순 정렬 + 이상치 제거
+    # 시간 순 정렬
     sorted_events = sorted(events, key=lambda e: e.charttime)
-    values = np.array([e.valuenum for e in sorted_events])
-    values = _remove_outliers(values)
+    raw_values = np.array([e.valuenum for e in sorted_events])
+
+    # IQR 이상치 제거 (NaN으로 마킹)
+    values = _remove_outliers(raw_values)
 
     valid_events = [e for e, v in zip(sorted_events, values) if not np.isnan(v)]
     valid_values = [v for v in values if not np.isnan(v)]
@@ -140,12 +148,22 @@ def _compute_single(item_id: int, events: list[LabEvent]) -> TrendResult:
     last_date = valid_events[-1].charttime
     ref_flag = _ref_flag(last_val, ref_range)
 
+    # 경과일 계산 (raw 시계열용 — IQR 제거 전 기준점으로 sorted_events[0] 사용)
+    first_time = sorted_events[0].charttime
+    raw_times = [
+        (e.charttime - first_time).total_seconds() / 86400
+        for e in sorted_events
+    ]
+
     result = TrendResult(
         itemid=item_id, label=label, unit=unit,
         last_value=last_val, last_date=last_date,
         ref_range=ref_range, ref_flag=ref_flag,
         n_points=len(valid_values),
         sparkline=_thin_sparkline(valid_events, valid_values),
+        # raw 시계열 저장 (IQR 제거 전 원본)
+        _raw_values=raw_values.tolist(),
+        _raw_times_days=raw_times,
     )
 
     # delta (직전 2회)
@@ -181,16 +199,32 @@ def _compute_single(item_id: int, events: list[LabEvent]) -> TrendResult:
     return result
 
 
-def _remove_outliers(values: np.ndarray) -> np.ndarray:
-    """IQR 3배 기준으로 이상치를 NaN으로 처리."""
+def remove_outliers_iqr(values: np.ndarray, multiplier: float = 3.0) -> np.ndarray:
+    """
+    IQR 배수 기준으로 이상치를 NaN으로 처리.
+
+    공개 함수로 노출하여 analysis/advanced.py에서 재사용 가능하게 함.
+    기본 multiplier=3.0은 extreme outlier(Lab 오류)만 제거하는 너그러운 기준.
+
+    Args:
+        values: 입력 배열
+        multiplier: IQR 배수 (기본 3.0)
+
+    Returns:
+        이상치가 NaN으로 대체된 배열 (원본 불변)
+    """
     if len(values) < 4:
-        return values
+        return values.copy().astype(float)
     q1, q3 = np.nanpercentile(values, [25, 75])
     iqr = q3 - q1
-    lower, upper = q1 - 3 * iqr, q3 + 3 * iqr
+    lower, upper = q1 - multiplier * iqr, q3 + multiplier * iqr
     result = values.copy().astype(float)
     result[(result < lower) | (result > upper)] = np.nan
     return result
+
+
+# 기존 내부 참조 유지 (모듈 내 _compute_single이 사용)
+_remove_outliers = remove_outliers_iqr
 
 
 def _ref_flag(value: float, ref_range: Optional[tuple]) -> str:
@@ -206,7 +240,6 @@ def _ref_flag(value: float, ref_range: Optional[tuple]) -> str:
 
 def _linear_regression(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     """단순 선형회귀. (slope, r_squared) 반환."""
-    n = len(x)
     x_mean, y_mean = x.mean(), y.mean()
     ss_xy = ((x - x_mean) * (y - y_mean)).sum()
     ss_xx = ((x - x_mean) ** 2).sum()
